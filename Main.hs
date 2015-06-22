@@ -23,7 +23,11 @@ type IssueCode        = B.ByteString
 type SeqNo            = Int
 type MarketStatusType = B.ByteString
 
-data Header = Header MarketType IssueCode SeqNo MarketStatusType
+data Header = Header
+              MarketType
+              IssueCode
+              SeqNo
+              MarketStatusType
   deriving Show
 
 type Price    = Int
@@ -38,7 +42,7 @@ data Ask = Ask Price Quantity
 instance Show Ask where
   show (Ask q p) = show q ++"@"++ show p
 
-type USec     = Int
+type USec = Int
 
 data Packet = Packet {
                       header        :: Header,
@@ -55,7 +59,7 @@ data Packet = Packet {
 
 instance Show Packet where
   show (Packet (Header _ ic _ _) _ bb _ ba _ _ _ _ t) =
-    show t ++ " " ++ show ic ++ 
+    show t ++ " " ++ show ic ++
     show bb ++
     show ba
 
@@ -115,7 +119,7 @@ parsePacket = do
   ss   <- A.count 2 ACh.digit
   uu   <- A.count 2 ACh.digit
   _    <- A.word8 0xff
-  return $ Packet h (read bvol) bids (read avol) asks 
+  return $ Packet h (read bvol) bids (read avol) asks
                   bestBid [bb1, bb2, bb3, bb4, bb5]
                   bestAsk [ba1, ba2, ba3, ba4, ba5]
                   (timeconvert hh mm ss uu)
@@ -141,7 +145,7 @@ writer chan = loop [] (0 :: USec)
                                             putStrLn "Done"
 
 parseAll :: TChan PacketEvent -> ByteString -> IO()
-parseAll chan = loop 
+parseAll chan = loop
   where loop input = case ACh.parse parsePacket input of
                           ACh.Done i p -> do atomically $ S.writeTChan chan (NewPacket p)
                                              loop i
@@ -152,4 +156,4 @@ main = do
   ch <- S.newTChanIO
   f <- B.readFile inputFile
   _ <- forkIO $ parseAll ch f
-  writer ch 
+  writer ch
